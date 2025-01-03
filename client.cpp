@@ -1,18 +1,13 @@
 #include <iostream>
 #include "hfa.h"
-#include <vector>
 
-std::vector<std::string> vec_ans_from_serv = {"Добро пожаловать на сервер! Теперь вводите команды(Help для вывода доступных команд). ",
-"Пароль не валидный. Используется автогенерация для лучшей защиты данных: ", "Пароль изменен!", "Пользователь удален!",
-"Данные для этого сервиса не найдены! ","Данные для этого сервиса уже есть!", "Все сервисы: ", "NewData - создаются новые данные",
-"Пароль: ","Неверный выбор!","Пользователь добавлен!"};
 int connection;
+int msg_size;
 
 std::string ServerMessage() //Получение сообщения от сервера
 {
-    int msg_size;
     char *msg;
-    int nreadb=0;
+    int nreadb=0;//переменная для проверки
     nreadb = recv(connection,(char*)&msg_size,sizeof(int),0);
     if(nreadb != sizeof(int))
     {
@@ -27,6 +22,7 @@ std::string ServerMessage() //Получение сообщения от сер�
     }
     std::cout << msg << std::endl;
     std::string msg_from_srv = msg;
+    delete msg;
     return msg_from_srv;
 }
 
@@ -44,7 +40,6 @@ int main()
         exit(1);
     }
     std::cout << "Соединение установлено. " << std::endl;
-    int msg_size;
     std::string msg;
     std::string msg_from_serv;
     std::string str;
@@ -53,23 +48,20 @@ int main()
     {
         //std::cout << "received message1" << std::endl;
         msg_from_serv = ServerMessage();
-        for(auto iter: vec_ans_from_serv)
-        {
-            if(msg_from_serv == iter) //Если в принятом сообщении содержится фраза из списка для автоответов, то отправляем автоответ
-            {
-                str = "Спасибо!";
-                msg_size= str.size();
-                send(connection,(char*)&msg_size,sizeof(int),0);// передаем размер строки
-                send(connection,str.c_str(),msg_size,0);
-            }
-        }
-        std::cout << "Ответ от клиента: ";
+        // while(msg_from_serv.size() != msg_size)
+        // {
+        //     msg = "Неполные данные";
+        //     msg_size= msg.size();
+        //     send(connection,(char*)&msg_size,sizeof(int),0);
+        //     send(connection,msg.c_str(),msg_size,0);
+        //     msg_from_serv = ServerMessage();
+        // }
+        //std::cout << "Ответ от клиента: ";
         getline(std::cin, msg);
         msg_size= msg.size();
         send(connection,(char*)&msg_size,sizeof(int),0);// передаем размер строки
         send(connection,msg.c_str(),msg_size,0);// затем передаем саму строку
-        //std::this_thread::sleep_for(std::chrono::milliseconds(1000));
+        
     }
-   /// system("pause");  //read -p \"Press any key to continue...\" -p 1
     return 0;
 }

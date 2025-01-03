@@ -1,29 +1,4 @@
-// #include <iostream>
-// #include <map>
-// #include <vector>
-// #include <fstream>
-// #include <fcntl.h>
-// #include <iomanip>
-// #include <sstream>
-// #include <string>
-// #include <stdio.h>
-// #include "hfa.h"
-// #include <cryptlib.h>
-// #include "rijndael.h"
-// #include "modes.h"
-// #include "files.h"
-// #include "osrng.h"
-// #include "hex.h"
-// #include "base64.h"
 #include "Mystorage.h"
-
-/*
-        ПО ФАКТУ, ВСЯ КЛИЕНТ-СЕРВЕРНАЯ АРХИТЕКТУРА - ЭТО ПОСТОЯННОЕ ИСПОЛЬЗЛОВАНИЕ 2Х ФУКНЦИЙ: send и receive
-        ОТПРАВИЛ - ПРИНЯЛ, ОТПРАВИЛ - ПРИНЯЛ И ТД
-*/
-
-std::vector<int> connect_users; //вектор юзеров которые присоединились
-int count; // количество присоединенных юзеров
 
 std::string Message_from_client(int ind) // принимаемыми параметрами будут сообщение клиента и мапа
 {
@@ -266,7 +241,7 @@ private:
 	std::string servis;
     int newConnection;
 public:
-	void getdata(std::map<std::string , std::pair<std::string,std::string>>& mapa)
+	std::string getdata(std::map<std::string , std::pair<std::string,std::string>>& mapa)
 	{
 		std::string ch;
 		std::string pass;
@@ -291,11 +266,7 @@ public:
 		{
 			pass = generator_pass();
 			mapa[servis] = std::make_pair(login,pass);
-			msg = "Пользователь добавлен!";
-            msg_size = msg.size();
-            send(newConnection,(char*)&msg_size,sizeof(int),0);
-            send(newConnection,msg.c_str(),msg_size,0);
-            pass = Message_from_client(newConnection);// относится к возвращению автоответа от клиента(Автоответ - это какой-то фитбек, по умолчанию от клиента)
+			return "Пользователь добавлен!";
 		}
 		else if(ch == "0")
 		{
@@ -307,11 +278,7 @@ public:
 			if(check_pass(password) == 1)
 			{
 				mapa[servis] = std::make_pair(login,password);
-				msg = "Пользователь добавлен!";
-                msg_size = msg.size();
-                send(newConnection,(char*)&msg_size,sizeof(int),0);
-                send(newConnection,msg.c_str(),msg_size,0);
-                pass = Message_from_client(newConnection); // Так же автоответ
+				return "Пользователь добавлен!";
 			}
 			else
 			{
@@ -325,37 +292,21 @@ public:
 				if(ch == "1") // при этой команде срабатывает else в мейне
 				{
 					mapa[servis] = std::make_pair(login,password);
-					msg = "Пользователь добавлен!";
-                    msg_size = msg.size();
-                    send(newConnection,(char*)&msg_size,sizeof(int),0);
-                    send(newConnection,msg.c_str(),msg_size,0);
-                    pass = Message_from_client(newConnection); // Так же приняли "автоответ"
-					return;
 				}
 				else if(ch == "0")
 				{
 					password = generator_pass();
 					mapa[servis] = std::make_pair(login,password);
-					msg = "Пользователь добавлен!";
-                    msg_size = msg.size();
-                    send(newConnection,(char*)&msg_size,sizeof(int),0);
-                    send(newConnection,msg.c_str(),msg_size,0);
-                    pass = Message_from_client(newConnection); // Так же приняли "автоответ"
-					return;
 				}
+                return "Пользователь добавлен!";
 			}
 		}
 		else
 		{
-			msg = "Неверный выбор!";
-            msg_size = msg.size();
-            send(newConnection,(char*)&msg_size,sizeof(int),0);
-            send(newConnection,msg.c_str(),msg_size,0);
-            pass = Message_from_client(newConnection); // Так же приняли "автоответ"
-			return;
+			return "Неверный выбор!";
 		}
 	}
-	void showdata(std::map < std::string, std::pair< std::string,std::string > > &mapa, std::string serv)
+	std::string showdata(std::map < std::string, std::pair< std::string,std::string > > &mapa, std::string serv)
 	{
         std::string msg = "";
         int msg_size;
@@ -366,6 +317,8 @@ public:
 			if(serv == "All" || serv == "all") //собираем здесь на вывод наши пароли
 			{
 				msg +="Пароль: " + iter.second.second +"\n";
+                std::cout << "msg = " << msg << std::endl;
+                std::cout << "iter = " << iter.second.second << std::endl;
 			}
 			else if(serv != "All" || serv != "all")
 			{
@@ -380,12 +333,9 @@ public:
         {
             msg = "Нет данных!";
         }
-        msg_size = msg.size();
-        send(newConnection,(char*)&msg_size,sizeof(int),0);
-        send(newConnection,msg.c_str(),msg_size,0);
-        msg = Message_from_client(newConnection); // Используем автоответ
+        return msg;
 	}
-	void showcom()
+	std::string showcom()
 	{
 		int msg_size = 0;
         std::string msg;
@@ -396,16 +346,14 @@ public:
 		msg += "\nDelete servis - Удаляет данные из хранилища с использованием ввода логина";
 		msg += "\nChPass servis - изменяет пароль используя верный логин";
 		msg += "\nFind servis - находит сервис по его имени";
-        msg_size = msg.size();
-        send(newConnection,(char*)&msg_size,sizeof(int),0);
-        send(newConnection,msg.c_str(),msg_size,0);
-        msg = Message_from_client(newConnection); // Используем автоответ
+        return msg;
 	}
     void get_connect(int con)
     {
         newConnection = con;
+        return;
     }
-	void show_servises(std::map<std::string,std::pair<std::string,std::string>> &mapa, std::string name_servis)
+	std::string show_servises(std::map<std::string,std::pair<std::string,std::string>> &mapa, std::string name_servis)
 	{
         std::string msg = ""; 
         int msg_size;
@@ -433,21 +381,15 @@ public:
         {
             msg = "Данные для этого сервиса не найдены! ";
         }
-        msg_size = msg.size();
-        send(newConnection,(char*)&msg_size,sizeof(int),0);
-        send(newConnection,msg.c_str(),msg_size,0);
-        msg = Message_from_client(newConnection);
+        return msg;
 	}
-    void delete_user(std::map<std::string,std::pair<std::string,std::string>> &mapa, std::string name_user)
+    std::string delete_user(std::map<std::string,std::pair<std::string,std::string>> &mapa, std::string name_user)
     {
         mapa.erase(name_user);
         std::string msg = "Пользователь удален!";
-        int msg_size = msg.size();
-        send(newConnection,(char*)&msg_size,sizeof(int),0);
-        send(newConnection,msg.c_str(),msg_size,0);
-        msg = Message_from_client(newConnection); //Так же  автоответ
+        return msg;
     }
-    void chpass_user(std::map<std::string,std::pair<std::string,std::string>> &mapa, std::string newPass) // передаем мапу и новый пароль
+    std::string chpass_user(std::map<std::string,std::pair<std::string,std::string>> &mapa, std::string newPass) // передаем мапу и новый пароль
     {
         std::string login, msg,srvs;
         int msg_size;
@@ -465,19 +407,13 @@ public:
         {
             mapa[srvs] = std::make_pair(login,newPass);
             msg = "Пароль изменен!";
-            msg_size = msg.size();
-            send(newConnection,(char*)&msg_size,sizeof(int),0);
-            send(newConnection,msg.c_str(),msg_size,0);
         }
         else
         {
             msg = "Пароль не валидный. Используется автогенерация для лучшей защиты данных: ";
             mapa[srvs] == std::make_pair(login,generator_pass());
-            msg_size = msg.size();
-            send(newConnection,(char*)&msg_size,sizeof(int),0);
-            send(newConnection,msg.c_str(),msg_size,0);
         }
-        msg = Message_from_client(newConnection); // Используем автоответ
+        return msg;
     }
 };
 
@@ -506,7 +442,13 @@ int main(int argc,char* argv[])
     int newConnection;
     unsigned int size = sizeof(addr);
 
-    std::string log = "timofej.derevyankin@inbox.ru", pass = "Winter@2025"; // логин и пароль для юзера
+    std::string log = "tima", pass = "18"; // логин и пароль для юзера
+
+    newConnection = accept(sListen,(sockaddr*)&addr,&size);
+
+    std::string newMessage;
+    std::string msg = "Приветствуем! Введите свои логин и пароль(логин первым)\n";
+    int count_toopen = 0;
 
 	std::ifstream fin("MyStorage.txt");
 	while (fin >> key >> value1>> value2) // key - сервис, value1 - логин, value2 - пароль
@@ -518,7 +460,6 @@ int main(int argc,char* argv[])
 	}
 	std::ofstream fout("MyStorage.txt");
 
-    newConnection = accept(sListen,(sockaddr*)&addr,&size);
     if (newConnection == 0) // проверка на соединение
 	{
 		std::cout << "Ошибка соединения!" << std::endl;
@@ -526,10 +467,6 @@ int main(int argc,char* argv[])
 	}
     else
     {
-        std::string newMessage;
-        std::vector<std::string> data_for_open;
-        std::string msg = "Приветствуем! Введите свои логин и пароль(логин первым)\n";
-        int count_toopen = 0;
         b1.get_connect(newConnection);// посылаем номер соединения, для методов сенд
         int msg_size = msg.size();
         send(newConnection,(char*)&msg_size,sizeof(int),0); // посылаем сначала размер сообщения
@@ -546,9 +483,9 @@ int main(int argc,char* argv[])
                     msg_size = msg.size();
                     send(newConnection,(char*)&msg_size,sizeof(int),0);
                     send(newConnection,msg.c_str(),msg_size,0);
-                    //Придумать санкции
+                    close(newConnection);
                 }
-                else if(newMessage != log && count_toopen ==0)
+                else if(newMessage != log && count_toopen == 0)
                 {
                     msg = "Неверный ввод логина! Осталось попыток: " + std::to_string(--attempts);
                     msg_size = msg.size();
@@ -572,59 +509,60 @@ int main(int argc,char* argv[])
                 }
                 if(count_toopen == 1 && newMessage == pass)
                 {
-                    msg = "Добро пожаловать на сервер! Теперь вводите команды(Help для вывода доступных команд).";
-                    msg_size = msg.size();
-                    send(newConnection,(char*)&msg_size,sizeof(int),0); // посылаем сначала размер сообщения
-                    send(newConnection,msg.c_str(),msg_size,0); // затем само сообщение
+                    msg = "";
                     while(true)
                     {
                         try
                         {
+                            msg += "Вводите команды(Help для вывода доступных команд): ";
+                            std::cout << msg << std::endl;
+                            msg_size = msg.size();
+                            send(newConnection,(char*)&msg_size,sizeof(int),0); // посылаем сначала размер сообщения
+                            send(newConnection,msg.c_str(),msg_size,0); // затем само сообщение
+                            msg = "";
                             newMessage = Message_from_client(newConnection);
+                            // while(newMessage == "Неполные данные")
+                            // {
+                            //     send(newConnection,(char*)&msg_size,sizeof(int),0);
+                            //     send(newConnection,msg.c_str(),msg_size,0);
+                            // }
                             vec_com = Parse(newMessage); //распарсили строку команды
                             if (vec_com[0] == "NewData")
                             {
-                                b1.getdata(myMap);
+                                msg += b1.getdata(myMap) + "\n\n";
                             }
                             else if (vec_com[0] == "ShowData")
                             {
-                                b1.showdata(myMap,vec_com[1]);
+                                msg += b1.showdata(myMap,vec_com[1]) + "\n\n";
+                                std::cout << msg << std::endl;
                             }
                             else if (vec_com[0] == "Help")
                             {
-                                b1.showcom();
+                                msg += b1.showcom() + "\n\n";
                             }
                             else if (vec_com[0] == "Exit")
                             {
                                 std::cout << "Выход из приложения..." << std::endl;
-                                for (auto iter : myMap)
-                                {
-                                    //записываем все как обычно (сервис + логин + шифр значение пароля)
-                                    std::string shiphr_pass = aes_encrypt_ecb_hex(iter.second.second, (unsigned char*)"123456789ABCDEF", 16);
-                                    std::string shiphr_log = aes_encrypt_ecb_hex(iter.second.first, (unsigned char*)"123456789ABCDEF", 16);
-                                    std::string shiphr_serv = aes_encrypt_ecb_hex(iter.first, (unsigned char*)"123456789ABCDEF", 16);
-                                    fout << shiphr_serv << "\t" << shiphr_log << "\t" << shiphr_pass <<"\n";
-                                }
                                 attempts = 0;
-                                exit(0);
+                                break;
                             }
                             else if (vec_com[0] == "Delete")
                             {
-                                b1.delete_user(myMap,vec_com[1]);
+                                msg += b1.delete_user(myMap,vec_com[1]) + "\n\n";
                             }
                             else if (vec_com[0] == "ChPass")
                             {
-                                b1.chpass_user(myMap,vec_com[1]);
+                                msg += b1.chpass_user(myMap,vec_com[1]) + "\n\n";
                             }
                             else if(vec_com[0] == "Find")
                             {
                                 if(vec_com.size() == 1)
                                 {
-                                    b1.show_servises(myMap, "");
+                                    msg += b1.show_servises(myMap, "") + "\n\n";
                                 }
                                 else
                                 {
-                                    b1.show_servises(myMap,vec_com[1]);
+                                    msg += b1.show_servises(myMap,vec_com[1]) + "\n\n";
                                 }
                             }
                         }
@@ -652,5 +590,6 @@ int main(int argc,char* argv[])
 	}
 	fout.close();
 	fin.close();
+    close(sListen);
 	return 0;
 }

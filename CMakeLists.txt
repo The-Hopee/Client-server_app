@@ -42,10 +42,6 @@ add_executable(Storage server.cpp)
  
 # target_link_libraries(main PRIVATE rtt::libcppcrypto setupapi  -municode wsock32 ws2_32  Iphlpapi iconv ssp )
 
-add_subdirectory(include)
-target_link_libraries(Storage PUBLIC sha256)
-target_include_directories(Storage PUBLIC "${PROJECT_BINARY_DIR}" "${PROJECT_SOURCE_DIR}/include")
-
 find_library(LIBCRYPTOPP_PATH cryptopp)
 add_library(rtt::libcryptopp STATIC IMPORTED)
 set_target_properties(rtt::libcryptopp 
