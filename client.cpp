@@ -6,46 +6,25 @@ int connection;
 
 std::string ServerMessage(int client_connection) //Получение сообщения от сервера
 {
-    //ПРОБЛЕМА КРОЕТСЯ ЗДЕСЬ
     int msg_size = 0;
-    char *msg;
+    char msg[1500];
     int nreadb=0;//переменная для проверки
     nreadb = recv(client_connection,(char*)&msg_size,sizeof(int),0);
-    //std::cout << "recieving msg_size = " << msg_size << std::endl;
     if(nreadb != sizeof(int))
     {
-        //std::cout<<" fitrst " << std::endl;
         return "";
     }
-    msg = new char[msg_size+1];
-    msg[msg_size] = '\0';
-    //std::cout << "Выделенная память под msg: " << strlen(msg) << std::endl;
-    nreadb = recv(client_connection,msg,msg_size,0);
-    // int count_zero = 0;
-    // for(int i = 0; i < msg_size;i++)
-    // {
-    //     if(msg[i] == '\0')
-    //     {
-    //         std::cout << i << " " << msg[i] << std::endl;
-    //         count_zero++;
-    //     }
-    // }
-    // std::cout << "Ноль-Терминалов: " << count_zero << std::endl;
+    nreadb = recv(client_connection,msg,sizeof(msg),0);
     if(nreadb != msg_size)
     {
-        //std::cout<<" second " << std::endl;
         return "";
     }
-    //std::cout << msg << std::endl;
-    //std:: cout << "Recieved msg in function: " << msg << std::endl;
-    
-    //          ОНО ПОЧЕМУ-ТО СКИПАЕТ БОЛЬШУЮ ЧАСТЬ СООБЩЕНИЯ
     std::string msg_from_srv;
+    msg_from_srv.resize(msg_size);
     for(int i = 0; i < msg_size; i++)
     {
         msg_from_srv[i] = msg[i];
     }
-    delete msg;
     return msg_from_srv;
 }
 
@@ -88,16 +67,22 @@ int main()
     std::cout << "Соединение установлено. Добро пожаловать на сервер! " << std::endl;
 
     int msg_size = 0;
-    bool flag = false;
     std::string msg;
     std::string msg_from_serv;
     std::vector<std::string> vec_com;
     while(true)
     {
-        std::cout << "Введите команду(Help - для вывода доступных команд): " << std::endl;
         msg = "";
+        std::cout << "\nВведите команду(Help - для вывода доступных команд): " << std::endl;
         getline(std::cin, msg);
+        //std::cout << "Ваша команда: " << msg << std::endl;
         vec_com = Parse(msg);
+        //std::cout << "Parse: " << std::endl;
+        // for(auto iter: vec_com)
+        // {
+        //     std::cout << iter << "\t";
+        // }
+        std::cout << std::endl;
         if(vec_com[0] == "NewData")
         {
             msg_size = msg.size();
@@ -126,15 +111,14 @@ int main()
                 msg_size = msg.size();
                 send(connection,(char*)&msg_size,sizeof(int),0);
                 send(connection,msg.c_str(),msg_size,0);
+
+                // Начинается код ShowData
+                std::cout << ServerMessage(connection) << std::endl;
             }
             else
             {
                 std::cout << "Некорректный ввод!" << std::endl;
-                flag = true;
             }
-
-            // Начинается код ShowData
-            std::cout << ServerMessage(connection) << std::endl;
         }
         else if (vec_com[0] == "Help")
         {
@@ -156,20 +140,17 @@ int main()
             if(vec_com.size() == 2)
             {
                 //Послали команду
-                std::cout << "Зашел и послал " << msg << std::endl;
                 msg_size = msg.size();
                 send(connection,(char*)&msg_size,sizeof(int),0);
-                send(connection,vec_com[0].c_str(),msg_size,0);
+                send(connection,msg.c_str(),msg_size,0);
+
+                //Реализация Delete
+                std::cout << ServerMessage(connection) << std::endl;
             }
             else
             {
                 std::cout << "Некорректный ввод!" << std::endl;
-                flag = true;
             }
-
-            //Реализация Delete
-            msg = ServerMessage(connection);
-            std::cout << msg << std::endl;
         }
         else if (vec_com[0] == "ChPass")
         {
@@ -179,29 +160,28 @@ int main()
                 msg_size = msg.size();
                 send(connection,(char*)&msg_size,sizeof(int),0);
                 send(connection,msg.c_str(),msg_size,0);
+
+                //Реализация ChPass
+                while(msg_from_serv != "Пароль изменен!" || msg_from_serv != "Пароль не валидный. Используется автогенерация для лучшей защиты данных: ")
+                {
+                    msg_from_serv = ServerMessage(connection);
+                    std::cout << msg_from_serv << std::endl;
+                    if( msg_from_serv == "Пароль изменен!" || msg_from_serv == "Пароль не валидный. Используется автогенерация для лучшей защиты данных: " )
+                    {
+                        break;
+                    }
+                    else
+                    {
+                        getline(std::cin,msg);
+                        msg_size = msg.size();
+                        send(connection,(char*)&msg_size,sizeof(int),0);
+                        send(connection,msg.c_str(),msg_size,0);
+                    }
+                }
             }
             else
             {
                 std::cout << "Некорректный ввод!" << std::endl;
-                flag = true;
-            }
-
-            //Реализация ChPass
-            while(msg_from_serv != "Пароль изменен!" || msg_from_serv != "Пароль не валидный. Используется автогенерация для лучшей защиты данных: ")
-            {
-                msg_from_serv = ServerMessage(connection);
-                std::cout << msg_from_serv << std::endl;
-                if( msg_from_serv == "Пароль изменен!" || msg_from_serv == "Пароль не валидный. Используется автогенерация для лучшей защиты данных: " )
-                {
-                    break;
-                }
-                else
-                {
-                    getline(std::cin,msg);
-                    msg_size = msg.size();
-                    send(connection,(char*)&msg_size,sizeof(int),0);
-                    send(connection,msg.c_str(),msg_size,0);
-                }
             }
         }
         else if(vec_com[0] == "Find")
@@ -212,15 +192,14 @@ int main()
                 msg_size = msg.size();
                 send(connection,(char*)&msg_size,sizeof(int),0);
                 send(connection,msg.c_str(),msg_size,0);
+
+                //Реализация Find
+                std::cout << ServerMessage(connection) << std::endl;
             }
             else
             {
                 std::cout << "Некорректный ввод!" << std::endl;
-                flag = true;
             }
-
-            //Реализация Find
-            std::cout << ServerMessage(connection) << std::endl;
         }
         else
         {

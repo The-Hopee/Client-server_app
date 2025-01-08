@@ -11,16 +11,22 @@ std::string Message_from_client(int ind) // принимаемыми парам�
     {
         return "";
     }
-    char* msg = new char[msg_size + 1];
-    msg[msg_size] =  '\0';
-    nreadb = recv(ind,msg,msg_size,0);// приняли пакет с сообщением записали в динамический массив
+    //char* msg = new char[msg_size + 1];
+    //msg[msg_size] =  '\0';
+    char msg[1500];
+    nreadb = recv(ind,msg,msg_size,0);// приняли пакет с сообщением записали в массив
     if(nreadb != msg_size)
     {
         return "";
     }
     // дешифруем данные
-    std::string str = msg; //копируем в стринг
-    delete[] msg;
+    std::string str; //копируем в стринг
+    str.resize(msg_size);
+    for(int i = 0; i < msg_size; i++)
+    {
+        str[i] = msg[i];
+    }
+    //delete[] msg;
     return str;
     // проверяем данные
 }
@@ -229,10 +235,9 @@ private:
 	std::string servis;
     int newConnection;
 public:
-	std::string getdata(std::map<std::string , std::pair<std::string,std::string>>& mapa)
+	std::string getdata(std::unordered_map<std::string , std::pair<std::string,std::string>>& mapa)
 	{
 		std::string ch;
-		std::string pass;
         std::string msg;
         int msg_size;
 		msg = "Введите предпочитаемый сервис: ";
@@ -252,8 +257,7 @@ public:
         ch = Message_from_client(newConnection);
 		if(ch == "1")
 		{
-			pass = generator_pass();
-			mapa[servis] = std::make_pair(login,pass);
+			mapa.insert({servis,std::make_pair(login,generator_pass())});
 			return "Пользователь добавлен!";
 		}
 		else if(ch == "0")
@@ -265,7 +269,7 @@ public:
             password = Message_from_client(newConnection);
 			if(check_pass(password) == 1)
 			{
-				mapa[servis] = std::make_pair(login,password);
+				mapa.insert({servis,std::make_pair(login,password)});
 				return "Пользователь добавлен!";
 			}
 			else
@@ -279,12 +283,11 @@ public:
                 ch = Message_from_client(newConnection);
 				if(ch == "1") // при этой команде срабатывает else в мейне
 				{
-					mapa[servis] = std::make_pair(login,password);
+					mapa.insert({servis,std::make_pair(login,password)});
 				}
 				else if(ch == "0")
 				{
-					password = generator_pass();
-					mapa[servis] = std::make_pair(login,password);
+					mapa.insert({servis,std::make_pair(login,generator_pass())});
 				}
                 return "Пользователь добавлен!";
 			}
@@ -294,30 +297,40 @@ public:
 			return "Неверный выбор!";
 		}
 	}
-	std::string showdata(std::map < std::string, std::pair< std::string,std::string > > &mapa, std::string serv)
+	std::string showdata(std::unordered_map<std::string , std::pair<std::string,std::string>>& mapa, std::string data)
 	{
+        //std::cout << "Я зашел в ShowData: " << std::endl;
+        auto it = mapa.find(data);
+        // if(it != mapa.end())
+        // {
+        //     std::cout << "it = " << it->first << std::endl;
+        // }
         std::string msg = "";
         int msg_size;
         bool flag = false;
 		for (auto iter : mapa)
 		{
-            flag = true;
-			if(serv == "All" || serv == "all") //собираем здесь на вывод наши пароли
+            //std::cout << "size = "<< iter.first.size() << "\telem = " << iter.first << "'" << std::endl;
+			if(data == "All" || data == "all") //собираем здесь на вывод наши пароли
 			{
 				msg.append("Пароль: " + iter.second.second +"\n");
+                flag = true;
 			}
-			else if(serv != "All" || serv != "all")
+			else
 			{
-				if(serv == iter.first)
+                //std::cout << "Я зашел в конкретный поиск: " << data << "\t" << iter.first << std::endl;
+				if(data == iter.first)
 				{
-					msg = "Пароль: " + iter.second.second +"\n";
+					msg.append("Пароль: " + iter.second.second +"\n");
+                    flag = true;
+                    break;
 				}
 			}
 		}
         // посылаем пароли клиенту и ждем "автоответ"
         if(flag == false)
         {
-            msg = "Нет данных!";
+            msg.append("Нет данных!");
         }
         return msg;
 	}
@@ -325,13 +338,13 @@ public:
 	{
 		int msg_size = 0;
         std::string msg;
-		msg = "NewData - создаются новые данные";
-		msg += "\nShowdata all/servis - показывает все или какие-то конкретные данные";
-		msg += "\nHelp - показывает все команды";
-		msg += "\nExit - выходит из программы";
-		msg += "\nDelete servis - Удаляет данные из хранилища с использованием ввода логина";
-		msg += "\nChPass servis - изменяет пароль используя верный логин";
-		msg += "\nFind servis/all - находит сервис по его имени либо выводит все сервисы";
+		msg.append("NewData - создаются новые данные");
+		msg.append("\nShowdata all/servis - показывает все или какие-то конкретные данные");
+		msg.append("\nHelp - показывает все команды");
+		msg.append("\nExit - выходит из программы");
+		msg.append("\nDelete servis - Удаляет данные из хранилища с использованием ввода логина");
+		msg.append("\nChPass servis - изменяет пароль используя верный логин");
+		msg.append("\nFind servis/all - находит сервис по его имени либо выводит все сервисы");
         return msg;
 	}
     void get_connect(int con)
@@ -339,47 +352,62 @@ public:
         newConnection = con;
         return;
     }
-	std::string show_servises(std::map<std::string,std::pair<std::string,std::string>> &mapa, std::string name_servis)
+	std::string show_servises(std::unordered_map<std::string , std::pair<std::string,std::string>>& mapa, std::string name_servis)
 	{
+        //std::cout << "Я зашел в find" << std::endl;
         std::string msg = ""; 
         int msg_size;
-        bool is_target = false; // для отслеживания сервиса: есть он или нет
-		if(name_servis == "all") // все сервисы
-		{
-			msg.append("Все сервисы: \n");
-			for(auto iter: mapa)
-			{
-				msg.append(iter.first + "\n");
-			}
-            is_target = true;
-		}
-		else // конкретный сервис
-		{
-			for(auto iter: mapa)
-			{
-				if(name_servis == iter.first)
-				{
-					msg = "Данные для этого сервиса уже есть!";
-                    is_target = true;
-                    break;
-				}
-			}
-		}
-        if(is_target == false)
+        auto it = mapa.find(name_servis);
+        if(it == mapa.end() && name_servis != "all")
         {
-            msg = "Данные для этого сервиса не найдены! ";
+            std::cout << "Данных для " << name_servis << " нет! " << std::endl;
+            msg.append("Данные для этого сервиса не найдены! ");
+        }
+        else
+        {
+            if(name_servis == "all") // все сервисы
+            {
+                msg.append("Все сервисы: \n");
+                for(auto iter: mapa)
+                {
+                    msg.append(iter.first + "\n");
+                }
+            }
+            else // конкретный сервис
+            {
+                //std::cout << "Я зашел в конкретный сервис "<< std::endl;
+                for(auto iter: mapa)
+                {
+                    if(name_servis == iter.first)
+                    {
+                        msg.append("Данные для этого сервиса уже есть!");
+                        break;
+                    }
+                }
+            }
         }
         return msg;
 	}
-    std::string delete_user(std::map<std::string,std::pair<std::string,std::string>> &mapa, std::string name_servis)
+    std::string delete_user(std::unordered_map<std::string , std::pair<std::string,std::string>>& mapa, std::string name_servis)
     {
         auto it = mapa.find(name_servis);
-        mapa.erase(it);
-        std::string msg = "Пользователь удален!";
-        return msg;
+        if(it == mapa.end())
+        {
+            return "Данного сервиса нет. Удаление не произведено";
+        }
+        else
+        {
+            mapa.erase(name_servis);
+            return "Пользователь удален!";
+        }
     }
-    std::string chpass_user(std::map<std::string,std::pair<std::string,std::string>> &mapa, std::string srvs) // передаем мапу и новый пароль
+    std::string chpass_user(std::unordered_map<std::string,std::pair<std::string,std::string>> &mapa, std::string srvs) // передаем мапу и новый пароль
     {
+        auto it = mapa.find(srvs);
+        if(it == mapa.end())
+        {
+            return "Неверный сервис!";
+        }
         std::string login, msg,newPass;
         int msg_size;
         msg = "Введите логин: ";
@@ -395,12 +423,17 @@ public:
         if(check_pass(newPass) == 1)
         {
             mapa[srvs] = std::make_pair(login,newPass);
+            std::cout << "Пароль изменен! " << std::endl;
+            for(auto iter: mapa)
+            {
+                std::cout << "servis: " << iter.first << ", login = " << iter.second.first << ", password = " << iter.second.second << std::endl;
+            }
             msg = "Пароль изменен!";
         }
         else
         {
             msg = "Пароль не валидный. Используется автогенерация для лучшей защиты данных: ";
-            mapa[srvs] == std::make_pair(login,generator_pass());
+            mapa[srvs] = std::make_pair(login,generator_pass());
         }
         return msg;
     }
@@ -410,11 +443,11 @@ int main(int argc,char* argv[])
 {
 	//Добавить большую мапу, которая хранит в себе std::pair(логин юзера пароль) и мапу с его сервисом, логином и паролем
 	setlocale(LC_ALL,"ru");
-	std::map<std::string, std::pair<std::string, std::string>> myMap; // должен быть контейнер который хранит логин и пароль от ячейки, а затем сохраняет все данные от ячейки
+	std::unordered_map<std::string, std::pair<std::string, std::string>> myMap; // должен быть контейнер который хранит логин и пароль от ячейки, а затем сохраняет все данные от ячейки
 
 	std::vector<std::string> vec_com;
 
-	std::string key, value1,value2;
+	std::string serv, log,pass;
 
 	base b1;
 
@@ -437,13 +470,13 @@ int main(int argc,char* argv[])
     int msg_size = 0;
 
 	std::ifstream fin("MyStorage.txt");
-	while (fin >> key >> value1>> value2) // key - сервис, value1 - логин, value2 - пароль
+	while (fin >> serv >> log>> pass) // key - сервис, value1 - логин, value2 - пароль
 	{
-		std::string data_pass = aes_decrypt_ecb_hex(value2, (unsigned char*)"123456789ABCDEF", 16);// Дешифруем пароль
-		std::string data_log = aes_decrypt_ecb_hex(value1, (unsigned char*)"123456789ABCDEF", 16);// Дешифруем логин
-		std::string data_servis = aes_decrypt_ecb_hex(key, (unsigned char*)"123456789ABCDEF", 16);// Дешифруем сервис
-		myMap[data_servis] = std::make_pair(data_log,data_pass);
-        std::cout << data_servis << "\t" << data_log << "\t" << data_pass << std::endl;
+		// std::string data_pass = aes_decrypt_ecb_hex(pass, (unsigned char*)"123456789ABCDEF", 16);// Дешифруем пароль
+		// std::string data_log = aes_decrypt_ecb_hex(log, (unsigned char*)"123456789ABCDEF", 16);// Дешифруем логин
+		// std::string data_servis = aes_decrypt_ecb_hex(serv, (unsigned char*)"123456789ABCDEF", 16);// Дешифруем сервис
+		myMap.insert({serv,std::make_pair(log,pass)});
+        std::cout << serv << "\t" << log << "\t" << pass << std::endl;
 	}
 	std::ofstream fout("MyStorage.txt");
 
@@ -454,13 +487,22 @@ int main(int argc,char* argv[])
 	}
     else
     {
+        std::cout << "Добро пожаловать!" << std::endl;
         b1.get_connect(newConnection);// посылаем номер соединения, для методов сенд
         while(true)
         {
             try
             {
                 newMessage = Message_from_client(newConnection);
+                //std::cout << "Message from client: " << newMessage << std::endl;
                 vec_com = Parse(newMessage); //распарсили строку команды
+                //std::cout << "Parse: " << std::endl;
+
+                for(auto iter: vec_com)
+                {
+                    std::cout << iter << "\t";
+                }
+                std::cout << std::endl;
                 if (vec_com[0] == "NewData")
                 {
                     msg = b1.getdata(myMap);
@@ -468,6 +510,7 @@ int main(int argc,char* argv[])
                 else if (vec_com[0] == "ShowData")
                 {
                     msg = b1.showdata(myMap,vec_com[1]);
+                    //std::cout << "Я выполнил ShowData" << std::endl;
                 }
                 else if (vec_com[0] == "Help")
                 {
@@ -477,22 +520,16 @@ int main(int argc,char* argv[])
                 {
                     //В будущем реализовать нормально для многопоточного приложения
                     std::cout << "Сохраняем данные клиента под номером " << newConnection << ": " << std::endl;
-                    // for (auto iter : myMap)
-	                // {
-		            //     //записываем все как обычно (сервис + логин + шифр значение пароля)
-                    //     std::string shiphr_pass = aes_encrypt_ecb_hex(iter.second.second, (unsigned char*)"123456789ABCDEF", 16);
-                    //     std::string shiphr_log = aes_encrypt_ecb_hex(iter.second.first, (unsigned char*)"123456789ABCDEF", 16);
-                    //     std::string shiphr_serv = aes_encrypt_ecb_hex(iter.first, (unsigned char*)"123456789ABCDEF", 16);
-                    //     fout << shiphr_serv << "\t" << shiphr_log << "\t" << shiphr_pass <<"\n";
-                    // }
-                    // close(newConnection);
-                    // fout.close();
-	                // fin.close();
                     break;
                 }
                 else if (vec_com[0] == "Delete")
                 {
                     msg = b1.delete_user(myMap,vec_com[1]);
+                    //std::cout << "Удаление прошло успешно. Результат: " << std::endl;
+                    // for(auto iter: myMap)
+                    // {
+                    //     std::cout << "Сервис: " << iter.first << "\tЛогин: " << iter.second.first << "\tПароль: " << iter.second.second << std::endl;
+                    // }
                 }
                 else if (vec_com[0] == "ChPass")
                 {
@@ -508,7 +545,9 @@ int main(int argc,char* argv[])
                     {
                         msg = b1.show_servises(myMap,vec_com[1]);
                     }
+                    //std::cout << "Я выполнил Find" << std::endl;
                 }
+                std::cout << "result msg = " << msg << std::endl;
                 msg_size = msg.size();
                 send(newConnection,(char*)&msg_size,sizeof(int),0); // посылаем сначала размер сообщения
                 send(newConnection,msg.c_str(),msg_size,0); // затем само сообщение
@@ -523,10 +562,11 @@ int main(int argc,char* argv[])
 	for (auto iter : myMap)
 	{
 		//записываем все как обычно (сервис + логин + шифр значение пароля)
-		std::string shiphr_pass = aes_encrypt_ecb_hex(iter.second.second, (unsigned char*)"123456789ABCDEF", 16);
-		std::string shiphr_log = aes_encrypt_ecb_hex(iter.second.first, (unsigned char*)"123456789ABCDEF", 16);
-		std::string shiphr_serv = aes_encrypt_ecb_hex(iter.first, (unsigned char*)"123456789ABCDEF", 16);
-		fout << shiphr_serv << "\t" << shiphr_log << "\t" << shiphr_pass <<"\n";
+		// std::string shiphr_pass = aes_encrypt_ecb_hex(iter.second.second, (unsigned char*)"123456789ABCDEF", 16);
+		// std::string shiphr_log = aes_encrypt_ecb_hex(iter.second.first, (unsigned char*)"123456789ABCDEF", 16);
+		// std::string shiphr_serv = aes_encrypt_ecb_hex(iter.first, (unsigned char*)"123456789ABCDEF", 16);
+		// fout << shiphr_serv << "\t" << shiphr_log << "\t" << shiphr_pass <<"\n";
+        fout << iter.first << "\t" << iter.second.first << "\t" << iter.second.second << "\n";
 	}
     fout.close();
 	fin.close();
