@@ -205,6 +205,7 @@ int main()
         {
             std::cout << "Некорректный ввод!" << std::endl;
         }
+        std::cin.clear();
     }
     close(connection); //Отсоединяемся от сервака
     return 0;
