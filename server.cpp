@@ -32,117 +32,136 @@ std::string Message_from_client(int ind) // принимаемыми парам�
 }
  
 using namespace CryptoPP;
+
+
+std::string Encrypt(std::string str, std::string cipher, std::string iv) 
+{ //функция которая шифрует наш стринг/string с помощью уникальных ключей cipher и iv, возвращает зашифрованный текст(std::string).
+    std::string Output;
+    CryptoPP::CFB_Mode<CryptoPP::AES>::Encryption Encryption((byte*)cipher.c_str(), cipher.length(), (byte*)iv.c_str());
+    CryptoPP::StringSource Encryptor(str, true, new CryptoPP::StreamTransformationFilter(Encryption, new CryptoPP::Base64Encoder(new CryptoPP::StringSink(Output), false)));
+    return Output;
+}
+
+std::string Decrypt(std::string str, std::string cipher, std::string iv) 
+{ //функция которая расшифрует зашифрованный стринг/string с помощью уникальных ключей cipher i iv, возвращает расшифрованный текст(std::string).
+    std::string Output;
+    CryptoPP::CFB_Mode<CryptoPP::AES>::Decryption Decryption((byte*)cipher.c_str(), cipher.length(), (byte*)iv.c_str());
+    CryptoPP::StringSource Decryptor(str, true, new CryptoPP::Base64Decoder(new CryptoPP::StreamTransformationFilter(Decryption, new CryptoPP::StringSink(Output))));
+    return Output;
+}
+
+
  
 // AES EBC encryption (output Base64)
-std::string aes_encrypt_ecb_base64(std::string data , unsigned char* key, int keylen)
-{
-    std::string encrypt_str;
-    try 
-    {
-        CryptoPP::ECB_Mode<CryptoPP::AES>::Encryption ecb_encription(key, keylen);
-        CryptoPP::StreamTransformationFilter stf_encription(
-            ecb_encription,
-            new CryptoPP::Base64Encoder(new CryptoPP::StringSink(encrypt_str)),
-            CryptoPP::BlockPaddingSchemeDef::ZEROS_PADDING
-        );
-        stf_encription.Put(reinterpret_cast<const unsigned char*>(data.c_str()), data.length() + 1);
-        stf_encription.MessageEnd();
-    }
-    catch (std::exception e) {
-        std::cout << e.what() << std::endl;
-    }
+// std::string aes_encrypt_ecb_base64(std::string data , unsigned char* key, int keylen)
+// {
+//     std::string encrypt_str;
+//     try 
+//     {
+//         CryptoPP::ECB_Mode<CryptoPP::AES>::Encryption ecb_encription(key, keylen);
+//         CryptoPP::StreamTransformationFilter stf_encription(
+//             ecb_encription,
+//             new CryptoPP::Base64Encoder(new CryptoPP::StringSink(encrypt_str)),
+//             CryptoPP::BlockPaddingSchemeDef::ZEROS_PADDING
+//         );
+//         stf_encription.Put(reinterpret_cast<const unsigned char*>(data.c_str()), data.length() + 1);
+//         stf_encription.MessageEnd();
+//     }
+//     catch (std::exception e) {
+//         std::cout << e.what() << std::endl;
+//     }
  
-    return encrypt_str;
-}
+//     return encrypt_str;
+// }
  
  // AES EBC encryption (output HEX) 
-std::string aes_encrypt_ecb_hex(std::string data , unsigned char* key, int keylen)
-{
-    std::string encrypt_str;
+// std::string aes_encrypt_ecb_hex(std::string data , unsigned char* key, int keylen)
+// {
+//     std::string encrypt_str;
  
-    try 
-    {
-        CryptoPP::ECB_Mode<CryptoPP::AES>::Encryption ecb_encription(key, keylen);
-        CryptoPP::StreamTransformationFilter stf_encription(
-            ecb_encription,
-            new CryptoPP::HexEncoder(new CryptoPP::StringSink(encrypt_str)),
-            CryptoPP::BlockPaddingSchemeDef::ZEROS_PADDING
-        );
-        stf_encription.Put(reinterpret_cast<const unsigned char*>(data.c_str()), data.length() + 1);
-        stf_encription.MessageEnd();
-    }
-    catch (std::exception e) {
-        std::cout << e.what() << std::endl;
-    }
+//     try 
+//     {
+//         CryptoPP::ECB_Mode<CryptoPP::AES>::Encryption ecb_encription(key, keylen);
+//         CryptoPP::StreamTransformationFilter stf_encription(
+//             ecb_encription,
+//             new CryptoPP::HexEncoder(new CryptoPP::StringSink(encrypt_str)),
+//             CryptoPP::BlockPaddingSchemeDef::ZEROS_PADDING
+//         );
+//         stf_encription.Put(reinterpret_cast<const unsigned char*>(data.c_str()), data.length() + 1);
+//         stf_encription.MessageEnd();
+//     }
+//     catch (std::exception e) {
+//         std::cout << e.what() << std::endl;
+//     }
  
-    return encrypt_str;
-}
+//     return encrypt_str;
+// }
  
  // AES EBC decryption (output Base64)
-std::string aes_decrypt_ecb_base64(std::string base64_data, unsigned char* key, int keylen)
-{
-    try 
-    {
-        std::string aes_encrypt_data;
-        CryptoPP::Base64Decoder decoder;
-        decoder.Attach(new CryptoPP::StringSink(aes_encrypt_data));
-        decoder.Put(reinterpret_cast<const unsigned char*>(base64_data.c_str()), base64_data.length());
-        decoder.MessageEnd();
+// std::string aes_decrypt_ecb_base64(std::string base64_data, unsigned char* key, int keylen)
+// {
+//     try 
+//     {
+//         std::string aes_encrypt_data;
+//         CryptoPP::Base64Decoder decoder;
+//         decoder.Attach(new CryptoPP::StringSink(aes_encrypt_data));
+//         decoder.Put(reinterpret_cast<const unsigned char*>(base64_data.c_str()), base64_data.length());
+//         decoder.MessageEnd();
  
-        std::string decrypt_data;
-        CryptoPP::ECB_Mode<CryptoPP::AES>::Decryption ebc_description(key, keylen);
-        CryptoPP::StreamTransformationFilter stf_description(
-            ebc_description,
-            new CryptoPP::StringSink(decrypt_data), 
-            CryptoPP::BlockPaddingSchemeDef::ZEROS_PADDING
-        );
+//         std::string decrypt_data;
+//         CryptoPP::ECB_Mode<CryptoPP::AES>::Decryption ebc_description(key, keylen);
+//         CryptoPP::StreamTransformationFilter stf_description(
+//             ebc_description,
+//             new CryptoPP::StringSink(decrypt_data), 
+//             CryptoPP::BlockPaddingSchemeDef::ZEROS_PADDING
+//         );
  
-        stf_description.Put(
-            reinterpret_cast<const unsigned char*>(aes_encrypt_data.c_str()), 
-            aes_encrypt_data.length()
-        );
-        stf_description.MessageEnd();
+//         stf_description.Put(
+//             reinterpret_cast<const unsigned char*>(aes_encrypt_data.c_str()), 
+//             aes_encrypt_data.length()
+//         );
+//         stf_description.MessageEnd();
  
-        return decrypt_data;
-    }
-    catch (std::exception e) {
-        std::cout << e.what() << std::endl;
-        return "";
-    }
-}
+//         return decrypt_data;
+//     }
+//     catch (std::exception e) {
+//         std::cout << e.what() << std::endl;
+//         return "";
+//     }
+// }
  
  // AES EBC Decryption (Output HEX)
-std::string aes_decrypt_ecb_hex(std::string hex_data, unsigned char* key, int keylen)
-{
-    try
-    {
-        std::string aes_encrypt_data;
-        CryptoPP::HexDecoder decoder;
-        decoder.Attach(new CryptoPP::StringSink(aes_encrypt_data));
-        decoder.Put(reinterpret_cast<const unsigned char*>(hex_data.c_str()), hex_data.length());
-        decoder.MessageEnd();
+// std::string aes_decrypt_ecb_hex(std::string hex_data, unsigned char* key, int keylen)
+// {
+//     try
+//     {
+//         std::string aes_encrypt_data;
+//         CryptoPP::HexDecoder decoder;
+//         decoder.Attach(new CryptoPP::StringSink(aes_encrypt_data));
+//         decoder.Put(reinterpret_cast<const unsigned char*>(hex_data.c_str()), hex_data.length());
+//         decoder.MessageEnd();
  
-        std::string decrypt_data;
-        CryptoPP::ECB_Mode<CryptoPP::AES>::Decryption ebc_description(key, keylen);
-        CryptoPP::StreamTransformationFilter stf_description(
-            ebc_description,
-            new CryptoPP::StringSink(decrypt_data),
-            CryptoPP::BlockPaddingSchemeDef::ZEROS_PADDING
-        );
+//         std::string decrypt_data;
+//         CryptoPP::ECB_Mode<CryptoPP::AES>::Decryption ebc_description(key, keylen);
+//         CryptoPP::StreamTransformationFilter stf_description(
+//             ebc_description,
+//             new CryptoPP::StringSink(decrypt_data),
+//             CryptoPP::BlockPaddingSchemeDef::ZEROS_PADDING
+//         );
  
-        stf_description.Put(
-            reinterpret_cast<const unsigned char*>(aes_encrypt_data.c_str()),
-            aes_encrypt_data.length()
-        );
-        stf_description.MessageEnd();
+//         stf_description.Put(
+//             reinterpret_cast<const unsigned char*>(aes_encrypt_data.c_str()),
+//             aes_encrypt_data.length()
+//         );
+//         stf_description.MessageEnd();
  
-        return decrypt_data;
-    }
-    catch (std::exception e) {
-        std::cout << e.what() << std::endl;
-        return "";
-    }
-}
+//         return decrypt_data;
+//     }
+//     catch (std::exception e) {
+//         std::cout << e.what() << std::endl;
+//         return "";
+//     }
+// }
 
 int check_pass(std::string&);
 
@@ -447,7 +466,7 @@ int main(int argc,char* argv[])
 
 	std::vector<std::string> vec_com;
 
-	std::string serv, log,pass;
+	std::string serv, log,pass, data_serv, data_log, data_pass;
 
 	base b1;
 
@@ -472,11 +491,11 @@ int main(int argc,char* argv[])
 	std::ifstream fin("MyStorage.txt");
 	while (fin >> serv >> log>> pass) // key - сервис, value1 - логин, value2 - пароль
 	{
-		// std::string data_pass = aes_decrypt_ecb_hex(pass, (unsigned char*)"123456789ABCDEF", 16);// Дешифруем пароль
-		// std::string data_log = aes_decrypt_ecb_hex(log, (unsigned char*)"123456789ABCDEF", 16);// Дешифруем логин
-		// std::string data_servis = aes_decrypt_ecb_hex(serv, (unsigned char*)"123456789ABCDEF", 16);// Дешифруем сервис
-		myMap.insert({serv,std::make_pair(log,pass)});
-        std::cout << serv << "\t" << log << "\t" << pass << std::endl;
+		data_serv = Decrypt(serv, "E9VwaE4nI8YElBMcdQE8guOWRc99d0cq", "ZEkY3CvOENM1gu9xdb0t8fWQ2XPtZUgO");
+        data_log = Decrypt(log, "E9VwaE4nI8YElBMcdQE8guOWRc99d0cq", "ZEkY3CvOENM1gu9xdb0t8fWQ2XPtZUgO");
+        data_pass = Decrypt(pass, "E9VwaE4nI8YElBMcdQE8guOWRc99d0cq", "ZEkY3CvOENM1gu9xdb0t8fWQ2XPtZUgO");
+		myMap.insert({data_serv,std::make_pair(data_log,data_pass)});
+        //std::cout << serv << "\t" << log << "\t" << pass << std::endl;
 	}
 	std::ofstream fout("MyStorage.txt");
 
@@ -562,11 +581,11 @@ int main(int argc,char* argv[])
 	for (auto iter : myMap)
 	{
 		//записываем все как обычно (сервис + логин + шифр значение пароля)
-		// std::string shiphr_pass = aes_encrypt_ecb_hex(iter.second.second, (unsigned char*)"123456789ABCDEF", 16);
-		// std::string shiphr_log = aes_encrypt_ecb_hex(iter.second.first, (unsigned char*)"123456789ABCDEF", 16);
-		// std::string shiphr_serv = aes_encrypt_ecb_hex(iter.first, (unsigned char*)"123456789ABCDEF", 16);
-		// fout << shiphr_serv << "\t" << shiphr_log << "\t" << shiphr_pass <<"\n";
-        fout << iter.first << "\t" << iter.second.first << "\t" << iter.second.second << "\n";
+		data_pass = Encrypt(iter.second.second, "E9VwaE4nI8YElBMcdQE8guOWRc99d0cq", "ZEkY3CvOENM1gu9xdb0t8fWQ2XPtZUgO");
+		data_log = Encrypt(iter.second.first, "E9VwaE4nI8YElBMcdQE8guOWRc99d0cq", "ZEkY3CvOENM1gu9xdb0t8fWQ2XPtZUgO");
+		data_serv = Encrypt(iter.first, "E9VwaE4nI8YElBMcdQE8guOWRc99d0cq", "ZEkY3CvOENM1gu9xdb0t8fWQ2XPtZUgO");
+		fout << data_serv << "\t" << data_log << "\t" << data_pass <<"\n";
+        //fout << iter.first << "\t" << iter.second.first << "\t" << iter.second.second << "\n";
 	}
     fout.close();
 	fin.close();
